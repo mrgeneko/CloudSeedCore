@@ -31,9 +31,12 @@ private:
             vDSP_biquad_DestroySetup(_setup);
             _setup = nullptr;
         }
-        float coeffs[5];
-        _inner.GetVDSPCoeffs(coeffs);
-        _setup = vDSP_biquad_CreateSetup(coeffs, 1);
+        float fcoeffs[5];
+        _inner.GetVDSPCoeffs(fcoeffs);
+        // vDSP_biquad_CreateSetup requires double coefficients even for the
+        // single-precision vDSP_biquad processing path.
+        double dcoeffs[5] = { fcoeffs[0], fcoeffs[1], fcoeffs[2], fcoeffs[3], fcoeffs[4] };
+        _setup = vDSP_biquad_CreateSetup(dcoeffs, 1);
     }
 
 public:

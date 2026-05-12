@@ -351,9 +351,12 @@ namespace Cloudseed
 			// Each DelayLine reads from tempBuffer (read-only here) and writes to
 			// its own slot in lineOutputs, so iterations are data-race-free.
 #ifdef __APPLE__
+			// Blocks can't capture C arrays; use pointers for both stack arrays.
+			float* tempBufPtr = tempBuffer;
+			float (*loPtr)[BUFFER_SIZE] = lineOutputs;
 			dispatch_apply((size_t)lineCount,
 			               dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0),
-			               ^(size_t i) { lines[i].Process(tempBuffer, lineOutputs[i], bufSize); });
+			               ^(size_t i) { lines[i].Process(tempBufPtr, loPtr[i], bufSize); });
 #else
 			for (int i = 0; i < lineCount; i++)
 				lines[i].Process(tempBuffer, lineOutputs[i], bufSize);
