@@ -25,7 +25,13 @@ THE SOFTWARE.
 #include "Lp1.h"
 #include "ModulatedDelay.h"
 #include "AllpassDiffuser.h"
+#ifdef __APPLE__
+#include "VDSPBiquadF.h"
+using BiquadFilter = Cloudseed::VDSPBiquadF;
+#else
 #include "Biquad.h"
+using BiquadFilter = Cloudseed::Biquad;
+#endif
 
 namespace Cloudseed
 {
@@ -113,8 +119,8 @@ namespace Cloudseed
 	private:
 		ModulatedDelay delay;
 		AllpassDiffuser diffuser;
-		Biquad lowShelf;
-		Biquad highShelf;
+		BiquadFilter lowShelf;
+		BiquadFilter highShelf;
 		Lp1 lowPass;
 		CircularBuffer<2*BUFFER_SIZE> feedbackBuffer;
 		float feedback;
@@ -127,8 +133,8 @@ namespace Cloudseed
 		bool TapPostDiffuser;
 
 		DelayLine() :
-			lowShelf(Biquad::FilterType::LowShelf, 48000),
-			highShelf(Biquad::FilterType::HighShelf, 48000)
+			lowShelf(Cloudseed::Biquad::FilterType::LowShelf, 48000),
+			highShelf(Cloudseed::Biquad::FilterType::HighShelf, 48000)
 		{
 			feedback = 0;
 

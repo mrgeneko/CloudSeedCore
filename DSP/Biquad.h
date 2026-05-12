@@ -71,6 +71,13 @@ namespace Cloudseed
 
 		double GetResponse(float freq) const;
 
+		// Fill [b0,b1,b2,a1,a2] in vDSP coefficient layout.
+		// Sign convention matches vDSP: y[n] = b0*x[n]+… - a1*y[n-1] - a2*y[n-2]
+		void GetVDSPCoeffs(float out[5]) const {
+			out[0] = b0; out[1] = b1; out[2] = b2;
+			out[3] = a1; out[4] = a2;
+		}
+
 		float inline Process(float x)
 		{
 			y = b0 * x + b1 * x1 + b2 * x2 - a1 * y1 - a2 * y2;

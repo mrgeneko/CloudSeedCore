@@ -119,8 +119,19 @@ namespace Cloudseed
 				rightChannelIn[i] = inR[i] * cmi + inL[i] * cm;
 			}
 
+	#ifdef __APPLE__
+			float* inLPtr = leftChannelIn;
+			float* inRPtr = rightChannelIn;
+			dispatch_apply(2,
+			               dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0),
+			               ^(size_t i) {
+			                   if (i == 0) channelL.Process(inLPtr, outL, bufSize);
+			                   else        channelR.Process(inRPtr, outR, bufSize);
+			               });
+#else
 			channelL.Process(leftChannelIn, outL, bufSize);
 			channelR.Process(rightChannelIn, outR, bufSize);
+#endif
 		}
 	};
 }

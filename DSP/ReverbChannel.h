@@ -36,6 +36,10 @@ THE SOFTWARE.
 #include "ReverbChannel.h"
 #include "Utils.h"
 
+#ifdef __APPLE__
+#include <dispatch/dispatch.h>
+#endif
+
 namespace Cloudseed
 {
 	enum class ChannelLR
@@ -318,6 +322,8 @@ namespace Cloudseed
 			float earlyOutBuffer[BUFFER_SIZE];
 			float lineOutBuffer[BUFFER_SIZE];
 			float lineSumBuffer[BUFFER_SIZE];
+			// Per-line output buffers for the parallel dispatch path.
+			float lineOutputs[TotalLineCount][BUFFER_SIZE];
 
 			Utils::Copy(tempBuffer, input, bufSize);
 
@@ -342,12 +348,19 @@ namespace Cloudseed
 				diffuser.Process(tempBuffer, tempBuffer, bufSize);
 			
 			Utils::Copy(earlyOutBuffer, tempBuffer, bufSize);
+			// Each DelayLine reads from tempBuffer (read-only here) and writes to
+			// its own slot in lineOutputs, so iterations are data-race-free.
+#ifdef __APPLE__
+			dispatch_apply((size_t)lineCount,
+			               dispatch_get_global_queue(QOS_CLASS_USER_INTERACTIVE, 0),
+			               ^(size_t i) { lines[i].Process(tempBuffer, lineOutputs[i], bufSize); });
+#else
+			for (int i = 0; i < lineCount; i++)
+				lines[i].Process(tempBuffer, lineOutputs[i], bufSize);
+#endif
 			Utils::ZeroBuffer(lineSumBuffer, bufSize);
 			for (int i = 0; i < lineCount; i++)
-			{
-				lines[i].Process(tempBuffer, lineOutBuffer, bufSize);
-				Utils::Mix(lineSumBuffer, lineOutBuffer, 1.0f, bufSize);
-			}
+				Utils::Mix(lineSumBuffer, lineOutputs[i], 1.0f, bufSize);
 
 			auto perLineGain = GetPerLineGain();
 			Utils::Gain(lineSumBuffer, perLineGain, bufSize);
