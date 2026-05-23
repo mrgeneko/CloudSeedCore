@@ -27,16 +27,17 @@ private:
     float _delay[4];
 
     void rebuildSetup() {
-        if (_setup) {
-            vDSP_biquad_DestroySetup(_setup);
-            _setup = nullptr;
-        }
         float fcoeffs[5];
         _inner.GetVDSPCoeffs(fcoeffs);
         // vDSP_biquad_CreateSetup requires double coefficients even for the
         // single-precision vDSP_biquad processing path.
         double dcoeffs[5] = { fcoeffs[0], fcoeffs[1], fcoeffs[2], fcoeffs[3], fcoeffs[4] };
+        // Create before destroying so _setup is never nullptr during Process().
+        // A concurrent IO-thread Process() call may use the old (stale-by-one-buffer)
+        // coefficients, but it will never see a null pointer.
+        auto oldSetup = _setup;
         _setup = vDSP_biquad_CreateSetup(dcoeffs, 1);
+        if (oldSetup) vDSP_biquad_DestroySetup(oldSetup);
     }
 
 public:
