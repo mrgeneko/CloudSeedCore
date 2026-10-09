@@ -21,7 +21,9 @@ THE SOFTWARE.
 */
 
 #include "Biquad.h"
-#define _USE_MATH_DEFINES
+#ifndef _USE_MATH_DEFINES
+#define _USE_MATH_DEFINES 1
+#endif
 #include "math.h"
 
 namespace Cloudseed
